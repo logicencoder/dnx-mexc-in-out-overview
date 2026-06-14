@@ -1,6 +1,6 @@
-# DNX MEXC In/Out — repositories
+# Related repositories
 
-| Role | Repository |
-|------|------------|
-| Code (private) | [logicencoder/dnx-mexc-in-out](https://github.com/logicencoder/dnx-mexc-in-out) |
-| This overview (public) | [logicencoder/dnx-mexc-in-out-overview](https://github.com/logicencoder/dnx-mexc-in-out-overview) |
+| Repository | Visibility | Role |
+|------------|------------|------|
+| [dnx-mexc-in-out](https://github.com/logicencoder/dnx-mexc-in-out) | private | Python worker, SQLite schema, CLI |
+| [dnx-mexc-in-out-overview](https://github.com/logicencoder/dnx-mexc-in-out-overview) | public | Product description (this repo) |

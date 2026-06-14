@@ -1,39 +1,57 @@
-# DNX MEXC In/Out Monitor (overview)
+# DNX MEXC In/Out Monitor
 
-Tracks **Dynex (DNX) transfers to and from the MEXC exchange wallet pattern** by scanning blocks from your own Dynex node. Built for operators who need reliable **exchange inflow/outflow** history without manually reading the block explorer.
+Python worker that scans a **local Dynex node** for transfers involving the known **MEXC hot-wallet address pattern**, classifies them as exchange **inflow or outflow**, and keeps a queryable SQLite ledger with hourly, daily, and weekly rollups.
 
-**Code (private):** [logicencoder/dnx-mexc-in-out](https://github.com/logicencoder/dnx-mexc-in-out)  
-**Delivery:** SOL only — Python worker + SQLite, supervised via Universal Service Manager
+Private code: [logicencoder/dnx-mexc-in-out](https://github.com/logicencoder/dnx-mexc-in-out). This public overview describes capabilities only — no RPC credentials or database files.
+
+## The problem it solves
+
+Block explorers show individual transactions, but they do not give you a dedicated **exchange flow ledger** with period totals. When you track Dynex treasury or MEXC-related market activity, you need a continuous record of how much DNX moved toward or away from the exchange — including catch-up after downtime and live tailing of new blocks.
+
+## How it works
+
+The worker connects to your own Dynex JSON-RPC (`getblockbyheight`), walks blocks in parallel, and skips heights already recorded. Each transfer touching the MEXC prefix is stored in SQLite with direction **IN** or **OUT** relative to that prefix.
+
+The terminal can hide small amounts below a display threshold, but **every transfer is still stored** in the database for accurate aggregates.
+
+## Capabilities
+
+### Block scanning
+
+Historical modes cover the last *N* blocks, a fixed height range, or a starting block through the chain tip. After catch-up, the same process can continue tailing new blocks in real time.
+
+### SQLite history
+
+Persistent tables hold raw MEXC-related transfers plus pre-aggregated hourly, daily, and weekly stats (total in, total out, net flow, transaction counts). A rebuild command recomputes period tables from the raw ledger if classification logic changes.
+
+### Operator CLI and menu
+
+Run with scan flags for automation, or launch without flags for an interactive menu — recent transactions, period stats, and aggregate rebuilds from the terminal.
+
+Common flags:
+
+| Flag | Purpose |
+|------|---------|
+| `--scan-last N` | Scan the last N blocks, then continue live |
+| `--scan-from BLOCK` | Start historical scan from a height |
+| `--scan-range START END` | Scan an inclusive block range |
+| `--realtime` | Live tail only |
+| `--stats hourly\|daily\|weekly` | Print aggregated in/out |
+| `--rebuild-stats` | Rebuild period tables from stored transactions |
+| `--threshold DNX` | Terminal display cutoff (storage unchanged) |
+
+### Requirements
+
+- Python 3 with `requests`
+- A reachable **local Dynex node** (JSON-RPC)
+- Writable directory for the SQLite database and checkpoint file
+
+## Related Logic Encoder work
+
+This monitor complements other Dynex and MEXC tooling (swap web apps, large-transaction alerts, trading stacks) but stays a **standalone worker** — one script, one database, no browser UI.
+
+See [REPOS.md](REPOS.md) for repository links.
 
 ---
 
-## What
-
-| Capability | Detail |
-|------------|--------|
-| **Block scan** | Parallel fetch from local Dynex RPC; skips already scanned heights |
-| **IN / OUT classification** | Labels flows relative to the MEXC prefix address |
-| **SQLite history** | Every transfer stored; terminal can hide small amounts under a DNX threshold |
-| **Period stats** | Hourly, daily, weekly aggregates (in, out, net) |
-| **Catch-up + live** | `--scan-last N` then continues tailing new blocks (USM default: 200) |
-| **Operator menu** | Interactive stats, recent txs, rebuild aggregates |
-
----
-
-## Why
-
-MEXC-related DNX movement is a useful signal for treasury and market ops. Block explorers do not give you a dedicated, queryable **exchange flow ledger** with rollups. This worker keeps that ledger on your server next to `dynexd`.
-
----
-
-## Who
-
-- **Operator** running Dynex + MEXC workflows on SOL  
-- **Not** a public website product — no WordPress plugin in this repo  
-- Pairs logically with **DNX swap** and **large-tx** monitors, but separate codebase
-
----
-
-## Stack
-
-Python 3, `requests`, SQLite, local Dynex node (`getblockbyheight` JSON-RPC). See private `ARCHITECTURE.md` for tables and CLI flags.
+**Made by [Logic Encoder](https://logicencoder.com)** · [GitHub](https://github.com/logicencoder) · [Contact](https://logicencoder.com/contact/)
