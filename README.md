@@ -1,56 +1,78 @@
 # DNX MEXC In/Out Monitor
 
-Python worker that scans a **local Dynex node** for transfers involving the known **MEXC hot-wallet address pattern**, classifies them as exchange **inflow or outflow**, and keeps a queryable SQLite ledger with hourly, daily, and weekly rollups.
+Python worker that watches a **local Dynex node** for transfers touching the known **MEXC hot-wallet prefix**, classifies each movement as exchange **inflow**, **outflow**, or **internal**, and keeps a durable SQLite ledger with hourly, daily, and weekly rollups. Operators use it when block explorers are not enough — you need period totals, catch-up after downtime, and a live tail without opening phpMyAdmin or re-scanning chain history by hand.
 
-Private code: [logicencoder/dnx-mexc-in-out](https://github.com/logicencoder/dnx-mexc-in-out). This public overview describes capabilities only — no RPC credentials or database files.
+The worker is a **standalone terminal tool** (no browser UI). It fits beside other Logic Encoder Dynex and MEXC tooling — treasury tracking, large-transaction alerts, swap web apps — but runs as one script with one local database file.
 
-## The problem it solves
+- **Parallel historical catch-up** — walks missing block heights in batches, skips heights already scanned, then can continue into live monitoring automatically.
+- **Direction-aware ledger** — **IN** when DNX arrives at the MEXC prefix, **OUT** when it leaves, **INTERNAL** for prefix-to-prefix hops; every row links to the Dynex block explorer for the transaction hash.
+- **Period statistics** — hourly, daily, and weekly totals for inflow, outflow, net flow, and transaction counts; rebuild from raw history when classification rules change.
+- **Display threshold** — the terminal can hide dust-sized transfers while the database still stores full amounts for accurate aggregates.
+- **Headless or interactive** — CLI flags for automation under Universal Service Manager; a nine-option menu when you launch without arguments.
 
-Block explorers show individual transactions, but they do not give you a dedicated **exchange flow ledger** with period totals. When you track Dynex treasury or MEXC-related market activity, you need a continuous record of how much DNX moved toward or away from the exchange — including catch-up after downtime and live tailing of new blocks.
+## Tech stack
 
-## How it works
+| Layer | Technologies |
+|-------|--------------|
+| Worker | Python 3, `requests`, `sqlite3`, `argparse`, `colorama`, `ThreadPoolExecutor` |
+| Chain access | Dynex JSON-RPC on a co-located node (`getinfo`, `getblockbyheight`) |
+| Persistence | SQLite — raw transfer ledger, scanned-block index, hourly/daily/weekly rollups |
+| Logging | Append-only log file under `logs/` (USM log tail friendly) |
+| Operations | CLI and interactive menu; typical production run uses `--scan-last` then live tail |
+| Hosting | Self-hosted Linux with a local Dynex daemon |
 
-The worker connects to your own Dynex JSON-RPC (`getblockbyheight`), walks blocks in parallel, and skips heights already recorded. Each transfer touching the MEXC prefix is stored in SQLite with direction **IN** or **OUT** relative to that prefix.
+## Inflow and outflow classification
 
-The terminal can hide small amounts below a display threshold, but **every transfer is still stored** in the database for accurate aggregates.
+For every transaction in each block, the worker inspects sender and recipient addresses against the configured MEXC prefix.
 
-## Capabilities
+| Direction | Meaning |
+|-----------|---------|
+| **IN** | DNX moved from an external wallet into the MEXC prefix — exchange deposit flow |
+| **OUT** | DNX left the MEXC prefix to an external wallet — exchange withdrawal flow |
+| **INTERNAL** | Both sides match the prefix — internal exchange routing |
 
-### Block scanning
+Amounts convert from raw chain units with a fixed coin divisor. Qualifying transfers deduplicate on hash, direction, and amount so replays do not inflate totals.
 
-Historical modes cover the last *N* blocks, a fixed height range, or a starting block through the chain tip. After catch-up, the same process can continue tailing new blocks in real time.
+## Block scanning modes
 
-### SQLite history
+**Smart scan + auto monitoring** (menu option 1) is the usual operator path: pick a starting block height, scan forward to the chain tip while skipping heights already in the scanned-block index, then continue tailing new blocks without restarting the process.
 
-Persistent tables hold raw MEXC-related transfers plus pre-aggregated hourly, daily, and weekly stats (total in, total out, net flow, transaction counts). A rebuild command recomputes period tables from the raw ledger if classification logic changes.
+**Manual range scan** (menu option 2) walks an inclusive start/end range and stops — useful for one-off backfills.
 
-### Operator CLI and menu
+**Real-time only** (menu option 3 or `--realtime`) watches new blocks from the current height with no historical walk.
 
-Run with scan flags for automation, or launch without flags for an interactive menu — recent transactions, period stats, and aggregate rebuilds from the terminal.
+Historical CLI equivalents:
 
-Common flags:
-
-| Flag | Purpose |
-|------|---------|
+| Flag | Behaviour |
+|------|-----------|
 | `--scan-last N` | Scan the last N blocks, then continue live |
-| `--scan-from BLOCK` | Start historical scan from a height |
-| `--scan-range START END` | Scan an inclusive block range |
-| `--realtime` | Live tail only |
-| `--stats hourly\|daily\|weekly` | Print aggregated in/out |
-| `--rebuild-stats` | Rebuild period tables from stored transactions |
-| `--threshold DNX` | Terminal display cutoff (storage unchanged) |
+| `--scan-from BLOCK` | Start historical scan from a height through the tip |
+| `--scan-range START END` | Scan an inclusive block range only |
+| `--realtime` | Live tail without history |
 
-### Requirements
+Parallel fetch workers batch block downloads; commits batch every few hundred blocks during long catch-up so SQLite stays responsive. Period rollups rebuild at the end of a large historical pass instead of updating on every row mid-scan.
 
-- Python 3 with `requests`
-- A reachable **local Dynex node** (JSON-RPC)
-- Writable directory for the SQLite database and checkpoint file
+## Statistics and transaction review
 
-## Related Logic Encoder work
+**Hourly, daily, and weekly views** (menu options 4–6 or `--stats hourly|daily|weekly`) print period tables: total in, total out, net flow, and transaction counts per period. Optional `--limit N` caps how many recent periods print.
 
-This monitor complements other Dynex and MEXC tooling (swap web apps, large-transaction alerts, trading stacks) but stays a **standalone worker** — one script, one database, no browser UI.
+**Recent transactions** (menu option 7) lists the latest ledger rows with block height, direction, amount in DNX, counterparty address snippet, timestamp, and an explorer link.
 
-See [REPOS.md](REPOS.md) for repository links.
+**Rebuild all statistics** (menu option 9 or `--rebuild-stats`) recomputes period tables from the raw transfer ledger after you change thresholds or fix classification logic.
+
+**Set display threshold** (menu option 8 or `--threshold DNX`) changes only what the terminal prints live — storage always keeps the full amount.
+
+On startup, if the database already contains MEXC flows, the worker prints lifetime inflow, outflow, and net flow before the menu or CLI action runs.
+
+## Headless deployment
+
+For Universal Service Manager or systemd, operators typically run with **`--scan-last`** (for example a few hundred blocks) so the process catches up and enters live monitoring without the interactive menu. The worker waits until the local Dynex node answers `getinfo` before scanning.
+
+Writable directory beside the script holds the SQLite database, checkpoint state, and log output — not committed to git.
+
+Private code: [dnx-mexc-in-out](https://github.com/logicencoder/dnx-mexc-in-out)
+
+See [REPOS.md](REPOS.md).
 
 ---
 
