@@ -1,5 +1,7 @@
 # DNX MEXC In/Out Monitor
 
+![DNX MEXC In/Out Monitor — daily inflow, outflow, and net-flow statistics](assets/dnx-in-out-terminal.png)
+
 Python worker that watches a **local Dynex node** for transfers touching the known **MEXC hot-wallet prefix**, classifies each movement as exchange **inflow**, **outflow**, or **internal**, and keeps a durable SQLite ledger with hourly, daily, and weekly rollups. Operators use it when block explorers are not enough — you need period totals, catch-up after downtime, and a live tail without opening phpMyAdmin or re-scanning chain history by hand.
 
 The worker is a **standalone terminal tool** (no browser UI). It fits beside other Logic Encoder Dynex and MEXC tooling — treasury tracking, large-transaction alerts, swap web apps — but runs as one script with one local database file.
