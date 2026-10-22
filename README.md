@@ -25,7 +25,7 @@ Recorded observations support returning to earlier activity rather than relying 
 
 ## Use the view for focused checks
 
-The product's value is its narrow scope: keep attention on the exchange flow being watched. The current screenshot demonstrates that terminal experience. Additional presentation material should be driven by meaningful user workflows rather than collecting images for their own sake.
+The product's value is its narrow scope: keep attention on the exchange flow being watched. The compact view keeps the exchange-flow investigation focused on the activity that matters.
 
 ---
 
