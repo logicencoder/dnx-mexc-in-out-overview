@@ -13,25 +13,25 @@ Exchange-related movements can be hard to follow when transaction activity is mi
 
 ## Follow exchange-related movements
 
-The monitor distinguishes the direction of relevant transfers and keeps identifying transaction information close to the event. This helps the operator see what arrived or left without manually scanning unrelated activity. The view is intended for observation and investigation.
+The monitor reads blocks from the operator's own Dynex node, picks out transfers to or from addresses carrying the MEXC prefix, marks each as incoming or outgoing and keeps its transaction reference. Every matching transaction is stored; a display threshold (in DNX) only filters what the terminal prints.
 
 Direction is the first useful distinction when reviewing an exchange-related movement. The focused feed keeps that distinction and its transaction reference together for a closer check.
 
 ## Keep a readable live view
 
-A terminal presentation makes the monitor useful during a running session. New observations appear in context, allowing the operator to follow changes without repeatedly opening individual records. It is a compact tool for checking a specific flow.
+Started without options it opens an interactive menu; with `--realtime` it only follows new blocks, and the default service mode catches up on missed blocks first and then continues live. Blocks are fetched in parallel, and a checkpoint plus a table of scanned blocks means a restart never rescans what is already known.
 
 The terminal view suits a session where the operator wants to watch incoming observations as they arrive. It keeps the flow readable without requiring a full trading dashboard.
 
 ## Review activity over time
 
-Recorded observations support returning to earlier activity rather than relying only on the latest screen. Transaction references help connect the monitor's view with a more detailed check when necessary. History adds context to a movement that initially appears unusual.
+History is scanned on demand: the last N blocks (`--scan-last`), from a given height (`--scan-from`) or an inclusive range (`--scan-range`). `--stats hourly`, `daily` or `weekly` prints aggregated incoming and outgoing totals from the stored transactions, and `--rebuild-stats` recomputes those totals if they need to be regenerated.
 
 Returning to earlier observations helps compare a new movement with the activity already seen. The transaction reference provides a route from the summary to a more specific investigation.
 
 ## Use the view for focused checks
 
-The product's value is its narrow scope: keep attention on the exchange flow being watched. The compact view keeps the exchange-flow investigation focused on the activity that matters.
+The same data can be pushed to a WordPress dashboard by a small bridge, which is what feeds the public MEXC balance monitor; the monitor itself is an operator tool with no web interface.
 
 The monitor complements broader chain and market tools by answering one question clearly: which relevant DNX movements are entering or leaving the exchange context being followed?
 
