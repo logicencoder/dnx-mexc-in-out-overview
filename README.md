@@ -43,3 +43,5 @@ Private code: [dnx-mexc-in-out](https://github.com/logicencoder/dnx-mexc-in-out)
 See [REPOS.md](REPOS.md) for related repositories.
 
 **[Logic Encoder](https://logicencoder.com)** · [GitHub](https://github.com/logicencoder) · [Contact](https://logicencoder.com/contact/)
+
+<!-- TODO(screenshots, 2026-11-07): proper UI screenshot instead of the backend log -->
