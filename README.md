@@ -1,6 +1,6 @@
 # DNX MEXC In/Out Monitor
 
-![DNX MEXC In/Out Monitor workspace](assets/dnx-in-out-terminal.png)
+![DNX MEXC In/Out Monitor workspace](assets/dnx-mexc-in-out-monitor-terminal-log.png)
 
 Exchange-related movements can be hard to follow when transaction activity is mixed with everything else on the chain. DNX MEXC In/Out Monitor focuses attention on Dynex transfers associated with MEXC, giving the operator a dedicated view of incoming and outgoing activity.
 
